@@ -10,13 +10,13 @@ import { Gate, Location, Zone } from './modules/locations/location.models.js';
 
 export async function seedDatabase(silent = false): Promise<void> {
   const org = await Organization.findOneAndUpdate(
-    { slug: 'Eskills' },
+    { slug: 'gmail' },
     {
       $setOnInsert: {
-        name: 'Eskills',
-        slug: 'Eskills',
+        name: 'gmail',
+        slug: 'gmail',
         status: 'ACTIVE',
-        contactEmail: 'ops@Eskills.com',
+        contactEmail: 'ops@gmail.com',
       },
     },
     { upsert: true, new: true },
@@ -24,11 +24,12 @@ export async function seedDatabase(silent = false): Promise<void> {
   const orgId = org._id as mongoose.Types.ObjectId;
   const passwordHash = await hashPassword('Test@123');
   const staff: Array<{ email: string; firstName: string; lastName: string; role: string }> = [
-    { email: 'admin@Eskills.com', firstName: 'Akshay', lastName: 'Nagdiya', role: 'ADMIN' },
-    { email: 'manager@Eskills.com', firstName: 'Rohan', lastName: 'Verma', role: 'MANAGER' },
-    { email: 'operator@Eskills.com', firstName: 'Kavya', lastName: 'Nair', role: 'OPERATOR' },
-    { email: 'security@Eskills.com', firstName: 'Arjun', lastName: 'Menon', role: 'SECURITY' },
-    { email: 'finance@Eskills.com', firstName: 'Divya', lastName: 'Iyer', role: 'FINANCE' },
+    { email: 'admin@gmail.com', firstName: 'Akshay', lastName: 'Nagdiya', role: 'ADMIN' },
+    { email: 'manager@gmail.com', firstName: 'Rohan', lastName: 'Verma', role: 'MANAGER' },
+    { email: 'operator@gmail.com', firstName: 'Kavya', lastName: 'Nair', role: 'OPERATOR' },
+    { email: 'security@gmail.com', firstName: 'Arjun', lastName: 'Menon', role: 'SECURITY' },
+    { email: 'finance@gmail.com', firstName: 'Divya', lastName: 'Iyer', role: 'FINANCE' },
+    { email: 'genius@gmail.com', firstName: 'Roshan', lastName: 'Gavari', role: 'master' },
   ];
   const users: Record<string, mongoose.Types.ObjectId> = {};
   for (const s of staff) {
@@ -41,9 +42,9 @@ export async function seedDatabase(silent = false): Promise<void> {
   }
   // A few students who hold bands.
   const students = [
-    { email: 'akshay@Eskills.com', firstName: 'Akshay', lastName: 'Sharma' },
-    { email: 'shivam@Eskills.com', firstName: 'Shivam', lastName: 'Goswami' },
-    { email: 'azim@Eskills.com', firstName: 'Azim', lastName: 'Khan' },
+    { email: 'akshay@gmail.com', firstName: 'Akshay', lastName: 'Sharma' },
+    { email: 'shivam@gmail.com', firstName: 'Shivam', lastName: 'Goswami' },
+    { email: 'azim@gmail.com', firstName: 'Azim', lastName: 'Khan' },
   ];
   const studentIds: mongoose.Types.ObjectId[] = [];
   for (const s of students) {
@@ -147,7 +148,17 @@ export async function seedDatabase(silent = false): Promise<void> {
 
   if (!silent) {
     // eslint-disable-next-line no-console
-    console.log(`seeded ${org.slug}: admin password is ChangeMe123! (4 demo bands, 1 gate, 1 device)`);
+    console.log(`seeded ${org.slug}: admin password is Test@123! (4 demo bands, 1 gate, 1 device)`);
+  }
+}
+
+export async function wipeDatabase(silent = false): Promise<void> {
+  const db = mongoose.connection.db;
+  if (!db) throw new Error('No active DB connection to wipe');
+  await db.dropDatabase();
+  if (!silent) {
+    // eslint-disable-next-line no-console
+    console.log(`wiped database "${db.databaseName}" — all previous data deleted`);
   }
 }
 
@@ -156,8 +167,12 @@ const isDirectRun =
   process.argv[1]?.replace(/\\/g, '/').endsWith('seed.js');
 
 if (isDirectRun) {
+  const shouldWipe = process.argv.includes('--wipe') || process.argv.includes('--clean') || process.argv.includes('--fresh');
   connectDb()
-    .then(() => seedDatabase())
+    .then(async () => {
+      if (shouldWipe) await wipeDatabase();
+      await seedDatabase();
+    })
     .then(async () => {
       await disconnectDb();
       process.exit(0);
